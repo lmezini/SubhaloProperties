@@ -1,0 +1,8 @@
+combo_param_m21_a50.h5
+shape log prob: (1, 249000, 35)
+median a val: 0.369 (+0.2413,-0.4582)
+median logMmin val: 12.6955 (+0.034,-0.0888)
+median alpha val: 0.3475 (+0.1577,-0.1858)
+median sigma val: 1.0176 (+0.1537,-0.0342)
+median M0 val: 13.0484 (+0.0302,-0.263)
+median M1 val: 13.8519 (+0.1609,-0.0187)

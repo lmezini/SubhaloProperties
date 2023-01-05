@@ -1,0 +1,20 @@
+from halotools.sim_manager import CachedHaloCatalog, FakeSim
+import numpy as np 
+import numexpr as ne
+import scipy
+from scipy.optimize import minimize_scalar
+import random
+from astropy.io import ascii
+from helpers.io_utils import hlist2pandas
+from numpy.linalg import norm,inv
+import glob
+
+halo_names = []
+host_ids = []
+with open('hlist_halos_info.txt') as f:
+    for l in f:
+        this_halo, host_id = l.split()
+        halo_names.append(this_halo)
+        host_ids.append(int(host_id))
+
+

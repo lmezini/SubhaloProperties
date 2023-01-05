@@ -1,0 +1,70 @@
+# Compiled source #
+###################
+*.com
+*.class
+*.dll
+*.exe
+*.o
+*.so
+
+# Packages #
+############
+# it's better to unpack these files and commit the raw source
+# git has its own built in compression methods
+*.7z
+*.dmg
+*.gz
+*.iso
+*.jar
+*.rar
+*.tar
+*.zip
+
+# Logs and databases #
+######################
+*.log
+*.sql
+*.sqlite
+
+# OS generated files #
+######################
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+*.pdf
+*.png
+*.npy
+*.npz
+*table
+*csv
+*list
+
+#directories#
+#############
+
+halo_profiles/
+Halos_Recalculated/
+mwm_sub_js/
+mwm_sub_mass/
+mwm_sub_pos/
+plots/
+rhap_sub_js/
+rhap_sub_mass/
+rhap_sub_mass_2/
+rhap_sub_pos/
+rhap_sub_pos_2/
+rhap_sub_vel/
+rockstar/
+spatial_dist_plots/
+sub_As/
+
+#Files#
+#######
+halo_cat_practice.ipynb
+
+
