@@ -62,6 +62,8 @@ max_mass_sub = np.zeros((45))
 sat_dist = np.zeros((45))
 sub_mass_far = np.zeros((45))
 
+sub_mass_list = []
+
 #for hlist
 names =['scale','ID','desc_scale','desc_id','num_prog','pid','upid','desc_pid',
     'phantom','sam_mvir','Mvir','Rvir','Rs', 'vrms', 'mmp', 'scale_of_last_MM',
@@ -93,40 +95,17 @@ with open('hlist_halo_ids.txt') as f:
         ##Reads in a single float##
         ##Rvir in kpc/h##
 for halo in halo_names:
-    print(halo)
+    #print(halo)
     #hostvalues = ascii.read('/Users/lmezini/proj_2/Halos_Recalculated/{}/out_0.list'.format(halo), format = 'commented_header')
     hostvalues = ascii.read('/Users/lmezini/proj_2/rs_files/Halo{}/hlist.list'.format(halo),names=names)
     loc = int(np.where(hostvalues['ID']==int(host_ids[i]))[0][0])
-    print(loc)
     if type(loc)==int:
+        print(i)
         halo_rvir = hostvalues['Rvir'][loc]
         halo_mvir = hostvalues['Mvir'][loc]
         mvirs[i] = halo_mvir
         rvirs[i] = halo_rvir
-        
-        whlimit = np.where(hostvalues['upid']==int(host_ids[i]))
-        subs = hostvalues[whlimit]
-        whlimit = np.where(subs['Vmax']>10.)
-        subs = subs[whlimit]
-        whlimit = np.where(subs['Mvir']>0.001*halo_mvir)
-        subs = subs[whlimit]
-
-        dist = np.sqrt((subs['X']-hostvalues['X'][loc])**2+(subs['Y']-hostvalues['Y'][loc])**2+(subs['Z']-hostvalues['Z'][loc])**2)
-        whlimit = np.where(dist<halo_rvir*0.001)
-        num_subs[i] = np.shape(whlimit)[1]
-    
-        if num_subs[i] > 0.0:
-            sat_dist[i] = sat_dist[i] = len(subs[np.where(dist[whlimit]>(0.001*halo_rvir/2.))])/num_subs[i]
-            sub_mass[i] = np.sum(subs[whlimit]['Mvir'])
-            max_mass_sub[i] = np.max(subs[whlimit]['Mvir'])
-            sub_mass_far[i] = np.sum(subs[np.where(dist[whlimit]>(0.001*halo_rvir/2.))]['Mvir'])
-        else:
-            avg_sat_dist[i] = 0.0#len(subs[np.where(dist[whlimit]<(halo_rvir/3000.))])/num_subs[i]
-            #print(avg_sat_dist[i])
-            #print(num_subs[i])
-            sub_mass[i] = 0.0
-            max_mass_sub[i] = 0.0
-
+ 
         #sub_mass[i] = np.sum(subs[whlimit]['Mvir'])
         #max_mass_sub[i] = np.max(subs[whlimit]['Mvir'])
         #num_subs[i] = np.shape(whlimit)[1]-1
@@ -150,6 +129,7 @@ for halo in halo_names:
         hostvy[i] = halovy
         halovz = hostvalues['VZ'][loc]
         hostvz[i] = halovz
+
         ##Angular momentum in Msun*Mpc*km/s
         halojx = hostvalues['JX'][loc]
         hostJx[i] = halojx
@@ -165,6 +145,39 @@ for halo in halo_names:
         host_c = hostvalues['Rvir'][loc]/hostvalues['Rs'][loc]
         host_cs[i] = host_c
                 
+
+        hostvalues.remove_row(loc)
+        whlimit = np.where(hostvalues['upid']==int(host_ids[i]))
+        subs = hostvalues[whlimit]
+
+        dist = np.sqrt((subs['X']-hostx[i])**2+(subs['Y']-hosty[i])**2+(subs['Z']-hostz[i])**2)
+        whlimit = np.where(dist<halo_rvir*0.001)
+        subs = subs[whlimit]
+
+        #sub_mass_list.append(subs['Mvir']/halo_mvir)
+        #np.save('mwm_sub_mass.npy',np.concatenate(sub_mass_list))
+
+        whlimit = np.where(subs['Vmax']>10.)
+        subs = subs[whlimit]
+        whlimit = np.where(subs['Mvir']>0.001*halo_mvir)
+        subs = subs[whlimit]
+        #whlimit = np.where(subs['Mvir']<0.1*halo_mvir)
+        #subs = subs[whlimit]
+        
+        num_subs[i] += int(len(subs))
+    
+        if num_subs[i] > 0:
+            sat_dist[i] = len(subs[np.where(dist[whlimit]>(0.001*halo_rvir/2.))])/num_subs[i]
+            sub_mass[i] = np.sum(subs['Mvir'])
+            max_mass_sub[i] = np.max(subs['Mvir'])
+            #sub_mass_far[i] = np.sum(subs[np.where(dist[whlimit]>(0.001*halo_rvir/2.))]['Mvir'])
+        else:
+            #avg_sat_dist[i] = 0.0#len(subs[np.where(dist[whlimit]<(halo_rvir/3000.))])/num_subs[i]
+            #print(avg_sat_dist[i])
+            #print(num_subs[i])
+            sub_mass[i] = 0.0
+            max_mass_sub[i] = 0.0
+
         i+=1
 """
 
@@ -269,7 +282,7 @@ for f in halo_names:
 """
 og_vals = np.vstack((rvirs,mvirs,hostx,hosty,hostz,hostvx,hostvy,
     hostvz,host_shapes,host_spins,host_cs,hostJx,hostJy,hostJz,
-    num_subs,scale,scale_lmm,scale_hm,sub_mass,max_mass_sub,sat_dist,sub_mass_far))
+    num_subs,scale,scale_lmm,scale_hm,sub_mass,max_mass_sub))
 
 #print(calculated_spins,calculated_shapes,calculated_cs,calculated_Jx,calculated_Jy,calculated_Jz)
 """
@@ -277,7 +290,7 @@ no_sub_vals = np.vstack((calculated_spins,calculated_shapes,calculated_cs,calcul
 """
 host_df = pd.DataFrame(data=og_vals.T, columns=["rvir","mvir","hostx","hosty","hostz","hostvx","hostvy",
         "hostvz","host_shapes","host_spins","host_cs","hostJx","hostJy","hostJz","num_subs","scale",
-        "scale_lmm","scale_hm","sub_mass","max_mass_sub","sat_dist","sub_mass_far"])
+        "scale_lmm","scale_hm","sub_mass","max_mass_sub"])
 
 host_og_vals = Table.from_pandas(host_df)
 host_og_vals.write('host_og_vals_mw_new2.table',format='ascii.commented_header',overwrite=True)

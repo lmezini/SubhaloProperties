@@ -13,7 +13,8 @@ rbins = np.logspace(-3, 0, 91)
 Create the halo profiles for host and subhalos by selecting particles within one virial radius of the host
 Profiles will be in a format of particles per radial bin
 """
-get_profile(f):
+
+def get_profile(f,prof_type):
     for l in f:
         this_halo, host_id, block, _ = l.split()
         print(this_halo)
@@ -57,4 +58,4 @@ get_profile(f):
              np.savez(this_halo+"_"+prof_type,sub=np.histogram(d_sub,rbins)[0])
 
 with open('halos_info.txt') as f:
-    get_profile(f)
+    get_profile(f,'host')

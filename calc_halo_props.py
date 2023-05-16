@@ -5,7 +5,7 @@ from scipy.optimize import minimize_scalar
 import glob
 from astropy.io import ascii
 from astropy.table import Column, Table
-from calc_shape import calc_shape
+#from calc_shape import calc_shape
 import pandas as pd
 
 
@@ -122,7 +122,7 @@ calculated_Jz = np.zeros((45))
 
 halo_names = []
 host_ids = []
-with open('halos_info_subset.txt') as f:
+with open('halos_info.txt') as f:
     for l in f:
         this_halo, host_id, block, _ = l.split()
         halo_names.append(this_halo)
@@ -134,18 +134,13 @@ with open('halos_info_subset.txt') as f:
 j = 0
 for f in halo_names:
     print(f)
-    fname = '/home/lom31/particle_stuff/particle_tables/{}_all.particle_table'.format(f)
+    fname = 'Halo023_all.particle_table'#/home/lom31/particle_stuff/particle_tables/{}_all.particle_table'.format(f)
     particlevalues = ascii.read(fname, format = 'commented_header')
     ##Make sure chosen particles are within the virial radius##
     r = Column(np.sqrt(particlevalues['x']**2+particlevalues['y']**2+particlevalues['z']**2),name='r')
     particlevalues.add_column(r)
     
     particle_mass = 281981.0
-    no_needed = int(np.floor(mvirs[j]/particle_mass))
-    
-    r_sorted = np.sort(particlevalues, order = 'r')
-    particlevalues = r_sorted[0:no_needed]
-
     whlimit = np.where(particlevalues['r']<=rvirs[j])
     particle_no = np.size(whlimit)
 
@@ -175,8 +170,8 @@ for f in halo_names:
         
         ##Calculate shape by calling the imported function##
     force_res = 0.00017 #Mpc/h
-    b_to_a, c_to_a, eig_A = calc_shape(rvirs[j]*1e-3, [0,0,0], pos, force_res) #all same units!
-    calculated_shapes[j] = c_to_a
+    #b_to_a, c_to_a, eig_A = calc_shape(rvirs[j]*1e-3, [0,0,0], pos, force_res) #all same units!
+    #calculated_shapes[j] = c_to_a
         
         ##Calculate angular momentum##
     ang_mom = calc_ang_momentum(pos,vel)
