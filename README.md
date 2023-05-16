@@ -1,2 +1,1 @@
-Expected paper (January 2023)
-[exploring_subhalo_effects.pdf](https://github.com/lmezini/subhalo_properties/files/10362535/exploring_subhalo_effects.pdf)
+[Link](https://arxiv.org/pdf/2304.13809.pdf) to my paper on influence of subhalos on host halo properties.
