@@ -113,20 +113,20 @@ def get_new_I(p,s,q,particles=None,halos=None,mass_norm = False,tot_mass=1.0):
         return I
 
 j = 0
-I_values = np.zeros((45,3,3))
+I_values = np.zeros((96,3,3))
 
-with open('halos_info.txt') as f:
+with open('/home/lom31/rhap_particles/halos_info_2.txt') as f:
     for l in f:
         this_halo, host_id, block, _ = l.split()
         print(this_halo)
 
         # load host
-        path = '/home/cef41/Outputs/{}/'.format(this_halo)
-        hostvalues = hlist2pandas(path + '/out_0.list')
+        path = '/home/lom31/rhap_particles/rhapsody/{}/rockstar/'.format(this_halo)
+        hostvalues = hlist2pandas(path + '/out_199.list')
         hostvalues = hostvalues.rename(columns={c: c.lower() for c in hostvalues.columns})
         hostvalues = Table.from_pandas(hostvalues)
         # load particles                                                       
-        fname = '/home/lom31/particle_stuff/particle_tables/{}_all.particle_table'.format(this_halo)
+        fname = '/home/lom31/rhap_particles/particle_tables/{}_all_1rvir.particle_table'.format(this_halo)
         particlevalues = ascii.read(fname, format = 'commented_header')
 
         host = hostvalues[hostvalues['id'] == int(host_id)]
@@ -136,21 +136,37 @@ with open('halos_info.txt') as f:
         rvir = host['rvir']*1e-3 #convert to same units as x,y,z
         mvir = host['mvir']
 
+        #make sure all halos are within virial radius
+        r = np.sqrt((hostvalues['x']-host_x)**2 +
+                    (hostvalues['y']-host_y)**2 +
+                    (hostvalues['z']-host_z)**2)
+        cut = r<rvir
+        hostvalues = hostvalues[cut]
+
+        #find particle positions centered on host
         x = particlevalues['x'] - host_x
         y = particlevalues['y'] - host_y
         z = particlevalues['z'] - host_z
+
+        #make sure all particles are within the virial radius
+        r = np.sqrt(x**2+y**2+z**2)
+        cut = r<rvir
+
+        x = x[cut]
+        y = y[cut]
+        z = z[cut]
+
         pos = np.array((x,y,z))
+        particlevalues = particlevalues[cut]
 
         #set initial s,q values
         s,q = 1.,1.
 
-        #recalculate inertia tensor (can normalize by halo mass)
-        I = get_new_I(pos,s,q,particlevalues,hostvalues,mass_norm = True,tot_mass = mvir)
+        #calculate inertia tensor (can normalize by halo mass)
+        I = get_new_I(pos, s, q)
 
         I_values[j] += I
+
+        np.save("rhap_all_inertia_tensor_no_norm_v2.npy",I_values)
+
         j+=1
-        np.save("mwm_all_inertia_tensor.npy",I_values)
-
-        
-
-

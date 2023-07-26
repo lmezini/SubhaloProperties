@@ -101,6 +101,7 @@ for halo in halo_names:
     loc = int(np.where(hostvalues['ID']==int(host_ids[i]))[0][0])
     if type(loc)==int:
         print(i)
+        print(halo_rvir)
         halo_rvir = hostvalues['Rvir'][loc]
         halo_mvir = hostvalues['Mvir'][loc]
         mvirs[i] = halo_mvir
