@@ -75,6 +75,7 @@ def rotate_position(host_I, pos, rvir):
     Returns:
         _type_: 2d projected distance of particle from halo center
     """
+
     hw, hv = get_eigs(host_I, rvir)
     new_pos = transform(pos, hv).T
 
@@ -191,6 +192,7 @@ for j,f in enumerate(halo_names):
 
     t = np.arccos(abs((new_pos*hA2).sum(axis=1)/(norm(new_pos,axis=1)*norm(hA))))*180./np.pi
     p = np.arccos((perp*hB2).sum(axis=1)/(norm(hB)*norm(perp,axis=1)))
+    
     for k in range(len(ang_cut)):
         mass_frac_A_ang[j][k]+=particle_mass*len(new_pos[t<ang_cut[k]])/mvirs[j]
 

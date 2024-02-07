@@ -187,7 +187,7 @@ with open('halos_info.txt') as f:
             new_err = max(err1,err2)
 
             it += 1
-            if it>9:
+            if it > 9:
                 break
 
         w,v,w_sq = get_eigs(I)

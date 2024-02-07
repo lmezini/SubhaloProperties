@@ -7,30 +7,46 @@ import random
 import glob
 from helpers.io_utils import hlist2pandas
 
-def rotate(v,thetax,thetay,thetaz):
-    #angles are given in degrees
-    #vect should be 1x3 dimensions
 
-    v_new = np.zeros(np.shape(v))
-    thetax = thetax*np.pi/180
-    thetay = thetay*np.pi/180
-    thetaz = thetaz*np.pi/180
-    Rx = np.matrix([[ 1, 0           , 0           ],
-                   [ 0, np.cos(thetax),-np.sin(thetax)],
-                   [ 0, np.sin(thetax), np.cos(thetax)]])
-  
-    Ry = np.matrix([[ np.cos(thetay), 0, np.sin(thetay)],
-                   [ 0           , 1, 0           ],
-                   [-np.sin(thetay), 0, np.cos(thetay)]])
-  
-    Rz = np.matrix([[ np.cos(thetaz), -np.sin(thetaz), 0 ],
-                   [ np.sin(thetaz), np.cos(thetaz) , 0 ],
-                   [ 0           , 0            , 1 ]])
-    
-    R = Rx * Ry * Rz
-    v_new += R*v
+def uniform_random_rotation(x):
+    """Apply a random rotation in 3D, with a distribution uniform over the
+    sphere.
 
-    return v_new
+    Arguments:
+        x: vector or set of vectors with dimension (n, 3), where n is the
+            number of vectors
+
+    Returns:
+        Array of shape (n, 3) containing the randomly rotated vectors of x,
+        about the mean coordinate of x.
+
+    Algorithm taken from "Fast Random Rotation Matrices" (James Avro, 1992):
+    https://doi.org/10.1016/B978-0-08-050755-2.50034-8
+    """
+
+    def generate_random_z_axis_rotation():
+        """Generate random rotation matrix about the z axis."""
+        R = np.eye(3)
+        x1 = np.random.rand()
+        R[0, 0] = R[1, 1] = np.cos(2 * np.pi * x1)
+        R[0, 1] = -np.sin(2 * np.pi * x1)
+        R[1, 0] = np.sin(2 * np.pi * x1)
+        return R
+
+    # There are two random variables in [0, 1) here (naming is same as paper)
+    x2 = 2 * np.pi * np.random.rand()
+    x3 = np.random.rand()
+
+    # Rotation of all points around x axis using matrix
+    R = generate_random_z_axis_rotation()
+    v = np.array([np.cos(x2) * np.sqrt(x3), np.sin(x2) * np.sqrt(x3), np.sqrt(1 - x3)])
+    H = np.eye(3) - (2 * np.outer(v, v))
+    M = -(H @ R)
+    x = x.reshape((-1, 3))
+    mean_coord = np.mean(x, axis=0)
+
+    return ((x - mean_coord) @ M) + mean_coord @ M
+
 
 def transform(v1,v2,axis = None):
     #convert to coords of principal axis (v2)
@@ -47,17 +63,25 @@ def transform(v1,v2,axis = None):
         v_new[0] += v1[0]*v2[axis,0]+v1[1]*v2[axis,1]+v1[2]*v2[axis,2]
         return v_new
 
-def random_rotation(I,pos):
-    np.random.seed()
-    tx=np.random.random()*90.0
-    ty=np.random.random()*90.0
-    tz=np.random.random()*90.0
 
-    new_I = rotate(I,tx,ty,tz)
-    new_pos = transform(pos,new_I).T
+def rotate_position(host_I, pos, rvir):
+    """Transform particle position to randomly rotated coordinate system
 
-    hA = new_I[0]
-    hB = new_I[1]
+    Args:
+        host_I (_type_): host halo inertia tensor
+        pos (_type_): particle position coordinates (x,y,z)
+        rvir (_type_): halo virial radius
+
+    Returns:
+        _type_: 2d projected distance of particle from halo center
+    """
+    hw, hv = get_eigs(host_I, rvir)
+    new_pos = transform(pos, hv).T
+
+    new_hv = uniform_random_rotation(hv)
+
+    hA = new_hv[0]
+    hB = new_hv[1]
 
     new_pos = transform(pos,hv).T
     hA2 = np.repeat(hA,len(new_pos)).reshape(3,len(new_pos)).T
@@ -70,25 +94,6 @@ def random_rotation(I,pos):
 
     return t
 
-def rotation_err_bs(I_arr,pos,ang_cut,mass,n,n_rep=1000):
-    #I_arr: principal axis of inertia tensor
-    #pos_arr: particle postions
-    #ang_cut: anglular separation
-    #mvir: host mass
-    #n: number of halos
-    #n_rep: number of bootstrap
-    fracs = np.zeros(n_rep)
-    for j in range(n_rep):
-        t = random_rotation(I_arr,pos)*180/np.pi
-        frac = particle_mass*len(pos[t<ang_cut])/mass
-        fracs[j]+=frac
-
-    #std1 = np.std(np.median(np.log10(fracs),axis=1))
-    #std2 = np.std(np.median(fracs,axis=1))
-    #percentiles1 = np.percentile(np.log10(np.median(fracs,axis=1)),[15.9,84.1])
-    #percentiles2 = np.percentile(np.median(fracs,axis=1),[15.9,84.1])
-
-    return fracs
 
 def get_eigs(I,rvir):
     #return eigenvectors and eigenvalues
@@ -126,13 +131,11 @@ hostJy = host_vals['hostJy']
 hostJz = host_vals['hostJz']
 
 
-ang_cut = [10.0, 20.0, 30.0, 40.0 ,50.0 ,60.0 ,70.0 ,80.0 ,90.0]
+ang_cut = np.linspace(1,90,90)
 
 mass_frac_A_ang = np.zeros((len(host_vals),len(ang_cut)))
 mass_frac_random = np.zeros((int(len(host_vals)*5),len(ang_cut)))
-frac_errs = np.zeros((len(ang_cut),len(host_vals),1000))
-percentiles = np.zeros((len(ang_cut),2))
-percentiles5 = np.zeros((len(ang_cut),2))
+
 halo_names = []
 host_ids = []
 
@@ -142,7 +145,7 @@ with open('halos_info_2.txt') as f:
         halo_names.append(this_halo)
         host_ids.append(host_id)
 
-
+m = 0
 for j,f in enumerate(halo_names):
     print(f)
     # load host                                                                 
@@ -191,25 +194,9 @@ for j,f in enumerate(halo_names):
     for k in range(len(ang_cut)):
         mass_frac_A_ang[j][k]+=particle_mass*len(new_pos[t<ang_cut[k]])/mvirs[j]
 
-    m = 0
     for n in range(5):
-        rand_t = random_rotation(hv,pos)*180/np.pi
+        rand_t = rotate_position(host_I[j],pos)*180/np.pi
         for k in range(len(ang_cut)):
             mass_frac_random[m][k]+=particle_mass*len(new_pos[rand_t<ang_cut[k]])/mvirs[j]
         m+=1
-    np.savez('rhap_mass_frac_ang_2.npz',A = mass_frac_A_ang, rand = mass_frac_random)
-
-    """
-        frac_errs[k][j] += rotation_err_bs(hv,pos,ang_cut[k],mvirs[j],len(halo_names),n_rep=1000)
-        np.save('rhap_mass_frac_errs.npy',frac_errs)
-    #percentiles1 = np.percentile(np.log10(np.median(frac_errs,axis=0)),[15.9,84.1])
-    #percentile_res = np.percentile(np.median(frac_errs,axis=1),[15.9,84.1])          
-    #percentiles[k][0]+=percentiles[0]
-    #percentiles[k][1]+=percentiles[1]
-
-    #percentile_res = np.percentile(np.median(frac_errs,axis=1),[0.00006,99.99994])
-    #percentiles5[k][0]+=percentile_res[0]
-    #percentiles5[k][1]+=percentile_res[1]
-
-    #np.savez('rhap_mass_frac_err.npz', one_sig = percentiles, five_sig = percentiles5)
-    """
+    np.savez('rhap_mass_frac_ang_fixed.npz',A = mass_frac_A_ang, rand = mass_frac_random)
